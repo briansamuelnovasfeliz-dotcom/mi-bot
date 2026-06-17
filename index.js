@@ -1,6 +1,5 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
-const fs = require('fs');
 const cron = require('node-cron');
 
 const client = new Client({
@@ -11,57 +10,30 @@ const client = new Client({
   ]
 });
 
-// 📦 comandos
-client.commands = new Map();
+const TOKEN = process.env.TOKEN;
+const CANAL_ID = process.env.CANAL_ID;
 
-const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
-
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
-}
-
-// 🟢 READY
-client.once('clientReady', () => {
+client.once('ready', () => {
   console.log(`✅ Bot conectado como ${client.user.tag}`);
 
-  // ⏰ cada 25 minutos
-  cron.schedule('*/25 * * * *', async () => {
+  // ⏰ cada 24 minutos
+  cron.schedule('*/24 * * * *', async () => {
     try {
-      const canal = await client.channels.fetch(process.env.CANAL_ID);
+      const canal = await client.channels.fetch(CANAL_ID);
 
-      if (!canal) return console.log('❌ Canal no encontrado');
+      if (!canal) {
+        console.log('❌ Canal no encontrado');
+        return;
+      }
 
-      canal.send('🚨 @everyone gente actívese 🔥 recuerden que el 20 de este mes iniciamos los streams 🎥💪');
+      canal.send(
+        '🚨 @everyone recuerden que el día 20 iniciamos stream 🎥🔥'
+      );
 
-      console.log('📢 Mensaje automático enviado');
-    } catch (err) {
-      console.log('❌ Error cron:', err);
+    } catch (error) {
+      console.log('❌ Error cron:', error);
     }
   });
 });
 
-// 💬 comandos
-client.on('messageCreate', (message) => {
-  if (message.author.bot) return;
-
-  const prefix = "!";
-  if (!message.content.startsWith(prefix)) return;
-
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const commandName = args.shift().toLowerCase();
-
-  const command = client.commands.get(commandName);
-
-  if (!command) return;
-
-  try {
-    command.execute(message, args);
-    console.log(`📩 ${message.author.tag} usó !${commandName}`);
-  } catch (err) {
-    console.log('❌ Error comando:', err);
-  }
-});
-
-// 🔑 LOGIN
-client.login(process.env.TOKEN);
+client.login(TOKEN);
